@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -155,6 +156,7 @@ func (h *FileHandler) UploadCover(c *gin.Context) {
 	_ = os.Remove(abs)
 
 	if err != nil {
+		log.Printf("Supabase upload cover failed: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
