@@ -35,36 +35,45 @@ func (h *FileHandler) UploadFile(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
+	log.Printf("[UploadFile] HIT uid=%d", uid)
 
 	fh, err := c.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "กรุณาแนบไฟล์ PDF"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "กรุณาแนบไฟล์ PDF", "detail": err.Error()})
 		return
 	}
 
 	id := uuid.New().String()
 	filename := id + ".pdf"
-	// abs := filepath.Join("./uploads", filename)
-	// // publicURL := "/uploads/" + filename
 
-	abs := filepath.Join(os.TempDir(), filename)
+	baseDir := filepath.Join(os.TempDir(), "chaladshare")
+	if err := os.MkdirAll(baseDir, 0755); err != nil {
+		log.Printf("[UploadFile] MkdirAll failed baseDir=%s err=%v", baseDir, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "สร้าง temp dir ไม่ได้", "detail": err.Error()})
+		return
+	}
+
+	abs := filepath.Join(baseDir, filename)
+	log.Printf("[UploadFile] abs=%s orig=%s size=%d", abs, fh.Filename, fh.Size)
 
 	if err := c.SaveUploadedFile(fh, abs); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถบันทึกไฟล์ได้"})
+		log.Printf("[UploadFile] SaveUploadedFile failed abs=%s err=%v", abs, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "save tmp failed", "detail": err.Error()})
 		return
 	}
 
 	req := &models.UploadRequest{
-		UserID:       uid,
-		DocumentName: fh.Filename,
-		// DocumentURL:     publicURL,
-		// StorageProvider: "local",
-		DocumentURL:     "",
-		StorageProvider: "supabase",
-		LocalPath:       abs,
+		UserID:           uid,
+		DocumentName:     fh.Filename,
+		DocumentURL:      "",
+		StorageProvider:  "supabase",
+		LocalPath:        abs,
 	}
+
 	resp, err := h.fileservice.UploadFile(req)
 	if err != nil {
+		log.Printf("[UploadFile] service.UploadFile failed err=%v", err)
+		_ = os.Remove(abs) // กันไฟล์ค้างถ้าอัปไม่สำเร็จ
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -74,6 +83,7 @@ func (h *FileHandler) UploadFile(c *gin.Context) {
 		"pdf_url":     resp.FileURL,
 	})
 }
+
 
 // cover image
 // func (h *FileHandler) UploadCover(c *gin.Context) {
