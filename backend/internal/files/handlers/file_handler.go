@@ -112,11 +112,10 @@ func (h *FileHandler) UploadFile(c *gin.Context) {
 // 		return
 // 	}
 
-// 	c.JSON(http.StatusCreated, gin.H{
-// 		"cover_url": publicURL,
-// 	})
-// }
-
+//		c.JSON(http.StatusCreated, gin.H{
+//			"cover_url": publicURL,
+//		})
+//	}
 func (h *FileHandler) UploadCover(c *gin.Context) {
 	uid := c.GetInt(middleware.CtxUserID)
 	if uid == 0 {
@@ -145,6 +144,8 @@ func (h *FileHandler) UploadCover(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถบันทึกไฟล์หน้าปกได้"})
 		return
 	}
+	defer func() { _ = os.Remove(abs) }()
+
 	log.Printf("[UploadCover] saved tmp=%s name=%s size=%d", abs, fh.Filename, fh.Size)
 
 	st, err := service.NewSupabaseStorageFromEnv()
@@ -154,43 +155,24 @@ func (h *FileHandler) UploadCover(c *gin.Context) {
 	}
 
 	objectPath := fmt.Sprintf("covers/%d/%s", uid, filename)
-
-	log.Printf(
-		"[UploadCover] upload to supabase bucket=%s path=%s",
-		os.Getenv("SUPABASE_STORAGE_BUCKET"),
-		objectPath,
-	)
-
-	publicURL, err := st.UploadLocalFile(c.Request.Context(), objectPath, abs)
-	objectPath := fmt.Sprintf("covers/%d/%s", uid, filename)
-
 	log.Printf("[UploadCover] upload to supabase bucket=%s path=%s",
 		os.Getenv("SUPABASE_STORAGE_BUCKET"),
 		objectPath,
 	)
 
-	// ✅ ลบไฟล์ temp ทีหลังเสมอ ไม่ว่าจะ success หรือ error
-	// ลบไฟล์ temp ทีหลังเสมอ
-	defer func() { _ = os.Remove(abs) }()
-defer func() { _ = os.Remove(abs) }()
+	publicURL, err := st.UploadLocalFile(c.Request.Context(), objectPath, abs)
+	if err != nil {
+		log.Printf("[UploadCover] Supabase upload failed uid=%d path=%s err=%v", uid, objectPath, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-publicURL, err := st.UploadLocalFile(c.Request.Context(), objectPath, abs)
-if err != nil {
-    log.Printf("[UploadCover] Supabase upload failed uid=%d path=%s err=%v",
-        uid, objectPath, err,
-    )
-    c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-    return
+	log.Printf("[UploadCover] success url=%s", publicURL)
+	c.JSON(http.StatusCreated, gin.H{
+		"cover_url":     publicURL,
+		"cover_storage": "supabase",
+	})
 }
-
-log.Printf("[UploadCover] success url=%s", publicURL)
-
-c.JSON(http.StatusCreated, gin.H{
-    "cover_url":     publicURL,
-    "cover_storage": "supabase",
-})
-
-
 
 // avatar image
 // func (h *FileHandler) UploadAvatar(c *gin.Context) {
