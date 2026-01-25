@@ -82,8 +82,9 @@ func (s *SupabaseStorage) UploadLocalFile(ctx context.Context, objectPath string
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		b, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("supabase upload failed: %s - %s", resp.Status, string(b))
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("supabase upload failed: status=%d body=%s",
+			resp.StatusCode, string(body))
 	}
 
 	publicURL := fmt.Sprintf("%s/storage/v1/object/public/%s/%s",
