@@ -144,6 +144,13 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
+	r.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":  "ok",
+			"service": "ChaladShare backend",
+		})
+	})
+
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{cfg.AllowOrigin},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
