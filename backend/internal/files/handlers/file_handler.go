@@ -241,10 +241,11 @@ func (h *FileHandler) UploadAvatar(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
+	log.Printf("[UploadAvatar] HIT uid=%d", uid)
 
 	fh, err := c.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "กรุณาแนบรูปโปรไฟล์"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "กรุณาแนบรูปโปรไฟล์", "detail": err.Error()})
 		return
 	}
 
@@ -254,30 +255,35 @@ func (h *FileHandler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	id := uuid.New().String()
-	filename := fmt.Sprintf("avatar_%d_%s_%d%s", uid, id, time.Now().UnixNano(), ext)
-	abs := filepath.Join(os.TempDir(), filename)
+	baseDir := filepath.Join(os.TempDir(), "chaladshare")
+	if err := os.MkdirAll(baseDir, 0755); err != nil {
+		log.Printf("[UploadAvatar] MkdirAll failed baseDir=%s err=%v", baseDir, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "สร้าง temp dir ไม่ได้", "detail": err.Error()})
+		return
+	}
+
+	filename := fmt.Sprintf("avatar_%d_%d%s", uid, time.Now().UnixNano(), ext)
+	abs := filepath.Join(baseDir, filename)
 
 	if err := c.SaveUploadedFile(fh, abs); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถบันทึกรูปโปรไฟล์ได้"})
+		log.Printf("[UploadAvatar] SaveUploadedFile failed abs=%s err=%v", abs, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "save tmp failed", "detail": err.Error()})
 		return
 	}
 	defer func() { _ = os.Remove(abs) }()
 
 	st, err := service.NewSupabaseStorageFromEnv()
 	if err != nil {
+		log.Printf("[UploadAvatar] storage env error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	objectPath := fmt.Sprintf("avatars/%d/%s", uid, filename)
+	objectPath := fmt.Sprintf("avatars/%d/avatar%s", uid, ext)
+
 	publicURL, err := st.UploadLocalFile(c.Request.Context(), objectPath, abs)
 	if err != nil {
-		log.Printf("[UploadAvatar] Supabase upload failed uid=%d path=%s err=%v",
-			uid,
-			objectPath,
-			err,
-		)
+		log.Printf("[UploadAvatar] upload failed uid=%d path=%s err=%v", uid, objectPath, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -287,6 +293,7 @@ func (h *FileHandler) UploadAvatar(c *gin.Context) {
 		"avatar_storage": "supabase",
 	})
 }
+
 
 // GET
 func (h *FileHandler) GetFilesByUserID(c *gin.Context) {
