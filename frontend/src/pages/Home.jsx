@@ -17,12 +17,16 @@ import three from "../assets/three.jpg";
 import "../component/Home.css";
 import Footer from "../component/Footer";
 
-const API_HOST = "http://localhost:8080";
+// const API_HOST = "https://chaladshare-production-cf5b.up.railway.app";
+// const API_HOST = "http://localhost:8080";
+const API_ORIGIN = process.env.REACT_APP_API_ORIGIN || window.location.origin;
+
 const toAbsUrl = (p) => {
   if (!p) return "";
   if (p.startsWith("http")) return p;
-  const clean = p.replace(/^\./, "");
-  return `${API_HOST}${clean.startsWith("/") ? clean : `/${clean}`}`;
+  const clean = p.replace(/^\.\//, "").replace(/^\./, "");
+  const path = clean.startsWith("/") ? clean : `/${clean}`;
+  return `${API_ORIGIN}${path}`;
 };
 
 const mapToCardPost = (p) => {
@@ -73,7 +77,7 @@ const mapToCardPost = (p) => {
 
 const Home = () => {
   // ข้อมูลโพสต์ยอดนิยม
-  const [popularPosts, setPopularPosts] = useState([
+  const [popularPosts] = useState([ // ลบ setPopularPosts
     {
       img: one,
       likes: 123,

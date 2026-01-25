@@ -6,13 +6,22 @@ import axios from "axios";
 import Sidebar from "./Sidebar";
 import "../component/Profile.css";
 
-const API_HOST = "http://localhost:8080";
+// const API_HOST = "http://localhost:8080";
+// ใช้ BASE URL เดียวกับ axios (รองรับทั้ง local/proxy/vercel)
+const API_ORIGIN =
+  process.env.REACT_APP_API_ORIGIN || window.location.origin;
+
 const toAbsUrl = (p) => {
   if (!p) return "";
   if (p.startsWith("http")) return p;
+
   const clean = p.replace(/^\./, "");
-  return `${API_HOST}${clean.startsWith("/") ? clean : `/${clean}`}`;
+  const path = clean.startsWith("/") ? clean : `/${clean}`;
+
+  // ถ้า backend เสิร์ฟ /uploads เป็น static
+  return `${API_ORIGIN}${path}`;
 };
+
 
 // ใช้ logic เดียวกับหน้า CreatePost
 function parseTags(input) {

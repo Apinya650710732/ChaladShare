@@ -9,13 +9,18 @@ import PostCard from "../component/Postcard";
 import Avatar from "../assets/default.png";
 import "../component/Profile.css";
 
-const API_HOST = "http://localhost:8080";
+// const API_HOST = "http://localhost:8080";
+const API_ORIGIN =
+  process.env.REACT_APP_API_ORIGIN || window.location.origin;
+
 const toAbsUrl = (p) => {
   if (!p) return "";
   if (p.startsWith("http")) return p;
-  const clean = p.replace(/^\./, "");
-  return `${API_HOST}${clean.startsWith("/") ? clean : `/${clean}`}`;
+  const clean = p.replace(/^\.\//, "").replace(/^\./, "");
+  const path = clean.startsWith("/") ? clean : `/${clean}`;
+  return `${API_ORIGIN}${path}`;
 };
+
 
 const Profile = () => {
   const { id } = useParams();

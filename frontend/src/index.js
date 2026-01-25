@@ -6,7 +6,8 @@ import reportWebVitals from './reportWebVitals';
 import axios from "axios";
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
-axios.defaults.baseURL = "http://localhost:8080/api/v1";
+// axios.defaults.baseURL = "http://localhost:8080/api/v1";
+axios.defaults.baseURL = "https://chaladshare-production-cf5b.up.railway.app/api/v1";
 axios.defaults.withCredentials = true;
 
 axios.interceptors.response.use(

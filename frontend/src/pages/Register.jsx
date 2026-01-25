@@ -22,14 +22,15 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setshowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false); // ✅ ใช้แค่ setter ไม่ต้องมีตัวแปร loading
 
   const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleChange = (e) => {
     setForm({
       ...formData,
-      [e.target.name]: e.target.value,});
+      [e.target.name]: e.target.value,
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -39,30 +40,18 @@ const Register = () => {
     const email = formData.userEmail.trim().toLowerCase();
     const username = formData.username.trim();
 
-    if (!email) {
-      setError("กรุณากรอกอีเมล");
-      return;
-    }
-    if (!validateEmail(email)) {
-      setError("รูปแบบอีเมลไม่ถูกต้อง");
-      return;
-    }
-    if (!username) {
-      setError("กรุณากรอกชื่อผู้ใช้");
-      return;
-    }
-    if (!formData.password) {
-      setError("กรุณากรอกรหัสผ่าน");
-      return;
-    }
-    if (formData.password !== formData.confirmpassword) {
-      setError("รหัสผ่านไม่ตรงกัน");
-      return;
-    }
+    if (!email) return setError("กรุณากรอกอีเมล");
+    if (!validateEmail(email)) return setError("รูปแบบอีเมลไม่ถูกต้อง");
+    if (!username) return setError("กรุณากรอกชื่อผู้ใช้");
+    if (!formData.password) return setError("กรุณากรอกรหัสผ่าน");
+    if (formData.password !== formData.confirmpassword)
+      return setError("รหัสผ่านไม่ตรงกัน");
 
     try {
       setLoading(true);
-      const res = await axios.post("/auth/register", {
+
+      // ✅ ไม่ต้องรับค่า res เพราะไม่ได้ใช้
+      await axios.post("/auth/register", {
         email,
         username,
         password: formData.password,
@@ -70,7 +59,6 @@ const Register = () => {
 
       alert("สมัครสมาชิกสำเร็จ!");
       navigate("/home", { replace: true });
-      
     } catch (err) {
       const msg =
         err.response?.data?.error ||
@@ -172,10 +160,7 @@ const Register = () => {
               <p style={{ color: "red", marginBottom: "10px" }}>{error}</p>
             )}
 
-            <button
-              type="submit"
-              className="mb-3 p-2 border border-gray-300 rounded"
-            >
+            <button type="submit" className="mb-3 p-2 border border-gray-300 rounded">
               สมัครสมาชิก
             </button>
           </form>
