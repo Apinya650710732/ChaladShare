@@ -156,7 +156,11 @@ func (h *FileHandler) UploadCover(c *gin.Context) {
 	_ = os.Remove(abs)
 
 	if err != nil {
-		log.Printf("Supabase upload cover failed: %v", err)
+		log.Printf("[UploadCover] Supabase upload failed uid=%d path=%s err=%v",
+			uid,
+			objectPath,
+			err,
+		)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -248,6 +252,11 @@ func (h *FileHandler) UploadAvatar(c *gin.Context) {
 	objectPath := fmt.Sprintf("avatars/%d/%s", uid, filename)
 	publicURL, err := st.UploadLocalFile(c.Request.Context(), objectPath, abs)
 	if err != nil {
+		log.Printf("[UploadAvatar] Supabase upload failed uid=%d path=%s err=%v",
+			uid,
+			objectPath,
+			err,
+		)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
