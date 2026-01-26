@@ -8,7 +8,7 @@ import { VscArrowLeft } from "react-icons/vsc";
 
 import "../component/Login.css"; // ใช้ CSS เดียวกับหน้า Login ให้หน้าตาเหมือนกัน
 import bg from "../assets/bg.jpg";
-import logo from "../assets/logo.png";
+import logo from "../assets/logo2.png";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");

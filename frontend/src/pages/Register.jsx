@@ -4,7 +4,7 @@ import axios from "axios";
 
 import "../component/Login.css";
 import bg from "../assets/bg.jpg";
-import logo from "../assets/logo.png";
+import logo from "../assets/logo2.png";
 
 import { MdOutlineAlternateEmail, MdLockOutline } from "react-icons/md";
 import { VscEye, VscEyeClosed } from "react-icons/vsc";
