@@ -47,9 +47,8 @@ const PostDetail = () => {
           return;
         }
 
-        const avatarRaw = data.avatar_url || "";
-        const hasRealAvatar = avatarRaw.startsWith("/uploads/");
-        const authorImg = hasRealAvatar ? toAbsUrl(avatarRaw) : Avatar;
+        const rawAuthorAvatar = data.avatar_url || "";
+        const authorImg = rawAuthorAvatar ? toAbsUrl(rawAuthorAvatar) : Avatar;
 
         const mapped = {
           id: data.post_id,
@@ -90,23 +89,23 @@ const PostDetail = () => {
 
     if (!post) return;
 
-  try {
-    const res = await axios.post(
-      `/posts/${id}/like`,
-      {},
-      { withCredentials: true }
-    );
-    const { is_liked, like_count } = res.data.data;
+    try {
+      const res = await axios.post(
+        `/posts/${id}/like`,
+        {},
+        { withCredentials: true }
+      );
+      const { is_liked, like_count } = res.data.data;
 
-    setLiked(is_liked);
-    setLikes(like_count ?? 0);
-    setPost((prev) =>
-      prev ? { ...prev, is_liked, like_count: like_count ?? 0 } : prev
-    );
-  } catch (error) {
-    console.error("Like toggle failed:", error);
-  }
-};
+      setLiked(is_liked);
+      setLikes(like_count ?? 0);
+      setPost((prev) =>
+        prev ? { ...prev, is_liked, like_count: like_count ?? 0 } : prev
+      );
+    } catch (error) {
+      console.error("Like toggle failed:", error);
+    }
+  };
 
   // Save แบบเดียวกับ Home (ไอคอนเหลืองเมื่อ active)
   const toggleSave = async (e) => {
@@ -115,22 +114,22 @@ const PostDetail = () => {
 
     if (!post) return;
 
-  try {
-    const res = await axios.post(
-      `/posts/${id}/save`,
-      {},
-      { withCredentials: true }
-    );
-    const { is_saved, save_count } = res.data.data;
+    try {
+      const res = await axios.post(
+        `/posts/${id}/save`,
+        {},
+        { withCredentials: true }
+      );
+      const { is_saved, save_count } = res.data.data;
 
-    setSaved(is_saved);
-    setPost((prev) =>
-      prev ? { ...prev, is_saved, save_count: save_count ?? prev.save_count } : prev
-    );
-  } catch (error) {
-    console.error("Save toggle failed:", error);
-  }
-};
+      setSaved(is_saved);
+      setPost((prev) =>
+        prev ? { ...prev, is_saved, save_count: save_count ?? prev.save_count } : prev
+      );
+    } catch (error) {
+      console.error("Save toggle failed:", error);
+    }
+  };
 
   const sharePost = async (e) => {
     e?.preventDefault?.();
