@@ -80,27 +80,27 @@ const Home = () => {
   const [popularPosts] = useState([ // ลบ setPopularPosts
     {
       img: one,
-      likes: 123,
+      likes: 312,
       title: "UML",
       tags: "#SE #softwareengineer #UML",
       authorName: "Anchalee",
-      authorImg: author2,
+      authorImg: butterbear,
     },
     {
       img: two,
-      likes: 350,
+      likes: 305,
       title: "PM - Project Management",
       tags: "#IT #PM #ProjectManagement",
       authorName: "Benjaporn",
-      authorImg: author2,
+      authorImg: person1,
     },
     {
       img: three,
-      likes: 2890,
+      likes: 298,
       title: "Software Testing",
       tags: "#SWtest #Req #functionalTesting",
       authorName: "Chaiwat",
-      authorImg: author2,
+      authorImg: kitty,
     },
   ]);
 
