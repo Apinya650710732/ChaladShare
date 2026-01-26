@@ -35,36 +35,45 @@ func (h *FileHandler) UploadFile(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
+	log.Printf("[UploadFile] HIT uid=%d", uid)
 
 	fh, err := c.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "กรุณาแนบไฟล์ PDF"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "กรุณาแนบไฟล์ PDF", "detail": err.Error()})
 		return
 	}
 
 	id := uuid.New().String()
 	filename := id + ".pdf"
-	// abs := filepath.Join("./uploads", filename)
-	// // publicURL := "/uploads/" + filename
 
-	abs := filepath.Join(os.TempDir(), filename)
+	baseDir := filepath.Join(os.TempDir(), "chaladshare")
+	if err := os.MkdirAll(baseDir, 0755); err != nil {
+		log.Printf("[UploadFile] MkdirAll failed baseDir=%s err=%v", baseDir, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "สร้าง temp dir ไม่ได้", "detail": err.Error()})
+		return
+	}
+
+	abs := filepath.Join(baseDir, filename)
+	log.Printf("[UploadFile] abs=%s orig=%s size=%d", abs, fh.Filename, fh.Size)
 
 	if err := c.SaveUploadedFile(fh, abs); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถบันทึกไฟล์ได้"})
+		log.Printf("[UploadFile] SaveUploadedFile failed abs=%s err=%v", abs, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "save tmp failed", "detail": err.Error()})
 		return
 	}
 
 	req := &models.UploadRequest{
-		UserID:       uid,
-		DocumentName: fh.Filename,
-		// DocumentURL:     publicURL,
-		// StorageProvider: "local",
+		UserID:          uid,
+		DocumentName:    fh.Filename,
 		DocumentURL:     "",
 		StorageProvider: "supabase",
 		LocalPath:       abs,
 	}
+
 	resp, err := h.fileservice.UploadFile(req)
 	if err != nil {
+		log.Printf("[UploadFile] service.UploadFile failed err=%v", err)
+		_ = os.Remove(abs) // กันไฟล์ค้างถ้าอัปไม่สำเร็จ
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -75,47 +84,6 @@ func (h *FileHandler) UploadFile(c *gin.Context) {
 	})
 }
 
-// cover image
-// func (h *FileHandler) UploadCover(c *gin.Context) {
-// 	uid := c.GetInt(middleware.CtxUserID)
-// 	if uid == 0 {
-// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-// 		return
-// 	}
-
-// 	fh, err := c.FormFile("file")
-// 	if err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "กรุณาแนบรูปหน้าปก"})
-// 		return
-// 	}
-
-// 	ext := strings.ToLower(filepath.Ext(fh.Filename))
-// 	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "รองรับเฉพาะ .jpg .jpeg .png"})
-// 		return
-// 	}
-
-// 	baseDir := "./uploads/covers"
-// 	if err := os.MkdirAll(baseDir, 0755); err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถสร้างโฟลเดอร์ได้"})
-// 		return
-// 	}
-
-// 	id := uuid.New().String()
-// 	filename := fmt.Sprintf("cover_%s_%d%s", id, time.Now().UnixNano(), ext)
-// 	abs := filepath.Join(baseDir, filename)
-
-// 	publicURL := "/uploads/covers/" + filename
-
-// 	if err := c.SaveUploadedFile(fh, abs); err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถบันทึกไฟล์หน้าปกได้"})
-// 		return
-// 	}
-
-//		c.JSON(http.StatusCreated, gin.H{
-//			"cover_url": publicURL,
-//		})
-//	}
 func (h *FileHandler) UploadCover(c *gin.Context) {
 	uid := c.GetInt(middleware.CtxUserID)
 	if uid == 0 {
@@ -126,7 +94,7 @@ func (h *FileHandler) UploadCover(c *gin.Context) {
 
 	fh, err := c.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "กรุณาแนบรูปหน้าปก"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "กรุณาแนบรูปหน้าปก", "detail": err.Error()})
 		return
 	}
 
@@ -136,86 +104,51 @@ func (h *FileHandler) UploadCover(c *gin.Context) {
 		return
 	}
 
+	baseDir := filepath.Join(os.TempDir(), "chaladshare")
+	if err := os.MkdirAll(baseDir, 0755); err != nil {
+		log.Printf("[UploadCover] MkdirAll failed baseDir=%s err=%v", baseDir, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "สร้าง temp dir ไม่ได้", "detail": err.Error()})
+		return
+	}
+
 	id := uuid.New().String()
 	filename := fmt.Sprintf("cover_%s_%d%s", id, time.Now().UnixNano(), ext)
-	abs := filepath.Join(os.TempDir(), filename)
+	abs := filepath.Join(baseDir, filename)
+
+	log.Printf("[UploadCover] tempdir=%s abs=%s orig=%s size=%d", baseDir, abs, fh.Filename, fh.Size)
 
 	if err := c.SaveUploadedFile(fh, abs); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถบันทึกไฟล์หน้าปกได้"})
+		log.Printf("[UploadCover] SaveUploadedFile failed abs=%s err=%v", abs, err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":  "save tmp failed",
+			"detail": err.Error(),
+		})
 		return
 	}
 	defer func() { _ = os.Remove(abs) }()
 
-	log.Printf("[UploadCover] saved tmp=%s name=%s size=%d", abs, fh.Filename, fh.Size)
+	log.Printf("[UploadCover] saved tmp=%s", abs)
 
 	st, err := service.NewSupabaseStorageFromEnv()
 	if err != nil {
+		log.Printf("[UploadCover] storage env error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	objectPath := fmt.Sprintf("covers/%d/%s", uid, filename)
-	log.Printf("[UploadCover] upload to supabase bucket=%s path=%s",
-		os.Getenv("SUPABASE_STORAGE_BUCKET"),
-		objectPath,
-	)
+	log.Printf("[UploadCover] upload bucket=%s path=%s", os.Getenv("SUPABASE_STORAGE_BUCKET"), objectPath)
 
 	publicURL, err := st.UploadLocalFile(c.Request.Context(), objectPath, abs)
 	if err != nil {
-		log.Printf("[UploadCover] Supabase upload failed uid=%d path=%s err=%v", uid, objectPath, err)
+		log.Printf("[UploadCover] upload failed err=%v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	log.Printf("[UploadCover] success url=%s", publicURL)
-	c.JSON(http.StatusCreated, gin.H{
-		"cover_url":     publicURL,
-		"cover_storage": "supabase",
-	})
+	c.JSON(http.StatusCreated, gin.H{"cover_url": publicURL, "cover_storage": "supabase"})
 }
-
-// avatar image
-// func (h *FileHandler) UploadAvatar(c *gin.Context) {
-// 	uid := c.GetInt(middleware.CtxUserID)
-// 	if uid == 0 {
-// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-// 		return
-// 	}
-
-// 	fh, err := c.FormFile("file")
-// 	if err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "กรุณาแนบรูปโปรไฟล์"})
-// 		return
-// 	}
-
-// 	ext := strings.ToLower(filepath.Ext(fh.Filename)) // .jpg / .png ...
-// 	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "รองรับเฉพาะ .jpg .jpeg .png"})
-// 		return
-// 	}
-
-// 	baseDir := "./uploads/avatars"
-// 	if err := os.MkdirAll(baseDir, 0755); err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถสร้างโฟลเดอร์ได้"})
-// 		return
-// 	}
-
-// 	id := uuid.New().String()
-// 	filename := fmt.Sprintf("avatar_%d_%s_%d%s", uid, id, time.Now().UnixNano(), ext)
-// 	abs := filepath.Join(baseDir, filename)
-
-// 	publicURL := "/uploads/avatars/" + filename
-
-// 	if err := c.SaveUploadedFile(fh, abs); err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถบันทึกรูปโปรไฟล์ได้"})
-// 		return
-// 	}
-
-// 	c.JSON(http.StatusCreated, gin.H{
-// 		"avatar_url":     publicURL,
-// 		"avatar_storage": "local",
-// 	})
-// }
 
 func (h *FileHandler) UploadAvatar(c *gin.Context) {
 	uid := c.GetInt(middleware.CtxUserID)
@@ -223,10 +156,11 @@ func (h *FileHandler) UploadAvatar(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
+	log.Printf("[UploadAvatar] HIT uid=%d", uid)
 
 	fh, err := c.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "กรุณาแนบรูปโปรไฟล์"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "กรุณาแนบรูปโปรไฟล์", "detail": err.Error()})
 		return
 	}
 
@@ -236,30 +170,35 @@ func (h *FileHandler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	id := uuid.New().String()
-	filename := fmt.Sprintf("avatar_%d_%s_%d%s", uid, id, time.Now().UnixNano(), ext)
-	abs := filepath.Join(os.TempDir(), filename)
+	baseDir := filepath.Join(os.TempDir(), "chaladshare")
+	if err := os.MkdirAll(baseDir, 0755); err != nil {
+		log.Printf("[UploadAvatar] MkdirAll failed baseDir=%s err=%v", baseDir, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "สร้าง temp dir ไม่ได้", "detail": err.Error()})
+		return
+	}
+
+	filename := fmt.Sprintf("avatar_%d_%d%s", uid, time.Now().UnixNano(), ext)
+	abs := filepath.Join(baseDir, filename)
 
 	if err := c.SaveUploadedFile(fh, abs); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถบันทึกรูปโปรไฟล์ได้"})
+		log.Printf("[UploadAvatar] SaveUploadedFile failed abs=%s err=%v", abs, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "save tmp failed", "detail": err.Error()})
 		return
 	}
 	defer func() { _ = os.Remove(abs) }()
 
 	st, err := service.NewSupabaseStorageFromEnv()
 	if err != nil {
+		log.Printf("[UploadAvatar] storage env error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	objectPath := fmt.Sprintf("avatars/%d/%s", uid, filename)
+	objectPath := fmt.Sprintf("avatars/%d/avatar%s", uid, ext)
+
 	publicURL, err := st.UploadLocalFile(c.Request.Context(), objectPath, abs)
 	if err != nil {
-		log.Printf("[UploadAvatar] Supabase upload failed uid=%d path=%s err=%v",
-			uid,
-			objectPath,
-			err,
-		)
+		log.Printf("[UploadAvatar] upload failed uid=%d path=%s err=%v", uid, objectPath, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
