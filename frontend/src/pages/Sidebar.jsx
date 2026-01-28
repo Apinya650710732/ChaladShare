@@ -6,7 +6,7 @@ import { IoMdAddCircleOutline } from "react-icons/io";
 import { TbHelpCircle } from "react-icons/tb";
 
 import "../component/Sidebar.css";
-import logo from "../assets/logo.png";
+import logo from "../assets/logo2.png";
 
 const Sidebar = () => {
   const navigate = useNavigate();
