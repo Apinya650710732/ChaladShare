@@ -66,7 +66,7 @@ const Sidebar = () => {
           <RiUser6Line /> โปรไฟล์
         </li>
 
-        <li className="menu-spacer" aria-hidden="true"></li>
+        <div className="menu-spacer" aria-hidden="true"></div>
 
         <li className={activeKey === "helper" ? "active" : ""} onClick={() => go("helper", "/helper")}>
           <TbHelpCircle /> คู่มือใช้งาน
